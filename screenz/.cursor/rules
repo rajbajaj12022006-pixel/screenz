@@ -1,0 +1,83 @@
+# Screenz – Cursor AI Rules
+# Django + MySQL + TMDB Dataset Movie Web App
+# ─────────────────────────────────────────────
+
+## Project Overview
+Screenz is a movie discovery web app built with:
+- Backend: Django 4.2 (Python)
+- Database: MySQL (via mysqlclient)
+- Frontend: Django Templates + Bootstrap 5 + custom CSS/JS
+- Data: TMDB 1M movie dataset (CSV import, no live API)
+- Auth: Custom user model (email-based login)
+
+## Project Structure
+screenz/
+├── apps/
+│   ├── accounts/     # Custom user model, login, signup, profile
+│   ├── movies/       # Movie, Genre, Platform models + views
+│   └── watchlist/    # WatchlistItem, WatchedMovie models + AJAX views
+├── templates/        # Django HTML templates
+│   ├── base.html
+│   ├── accounts/
+│   ├── movies/
+│   ├── partials/     # Reusable template partials (movie_card.html)
+│   └── watchlist/
+├── static/
+│   ├── css/main.css
+│   └── js/main.js
+├── scripts/
+│   └── import_tmdb.py   # TMDB CSV importer
+├── data/                # Place TMDB CSV here
+├── screenz/
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+└── manage.py
+
+## Key Models
+- CustomUser (apps.accounts): email login, avatar, bio
+- Movie (apps.movies): tmdb_id, title, content_type (movie/tv), genres M2M, platforms M2M, vote_average, release_year, poster_path
+- Genre (apps.movies): name, slug
+- Platform (apps.movies): name, slug (netflix/prime/jio/hotstar/apple/zee5/sonyliv)
+- WatchlistItem (apps.watchlist): user FK, movie FK
+- WatchedMovie (apps.watchlist): user FK, movie FK, rating, review
+
+## Coding Conventions
+- Use Django class-based views for complex views, function-based for simple ones
+- All views require @login_required unless it's the auth page
+- Use select_related() and prefetch_related() for all queries with relationships
+- Paginate search results at 24 per page
+- AJAX calls use fetch() + CSRF token from cookie
+- All templates extend base.html (except auth.html which is standalone)
+- CSS variables defined in :root for all colors (dark theme)
+- Never hardcode colors in templates — use CSS variables
+
+## Database
+- MySQL on localhost:3306, database: screenz_db
+- Run migrations: python manage.py makemigrations && python manage.py migrate
+- Import TMDB data: python scripts/import_tmdb.py data/tmdb_movies.csv
+
+## Common Commands
+```
+python manage.py runserver
+python manage.py makemigrations
+python manage.py migrate
+python manage.py createsuperuser
+python scripts/import_tmdb.py data/tmdb_movies.csv
+python scripts/import_tmdb.py data/tmdb_movies.csv 10000  # import 10k rows
+```
+
+## Design System
+- Colors: --accent #E5383B, --bg #0a0a0f, --surface #12121a
+- Fonts: Bebas Neue (display/headings), DM Sans (body)
+- Dark theme throughout
+- Responsive via Bootstrap 5 grid
+
+## Do Not
+- Do not use Django REST Framework (not needed — vanilla Django views)
+- Do not call TMDB API (blocked in India — use local CSV dataset)
+- Do not add new dependencies without updating requirements.txt
+- Do not use inline styles in templates — add classes to main.css
+
+## Platform Slugs (canonical)
+netflix | prime | jio | hotstar | apple | zee5 | sonyliv

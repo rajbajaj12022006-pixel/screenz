@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}My Profile – Screenz{% endblock %}
+{% block content %}
+<div class="profile-page">
+  <div class="profile-header px-4 py-4">
+    <div class="profile-avatar-lg">{{ user.username|first|upper }}</div>
+    <div>
+      <h1 class="profile-name">{{ user.get_full_name|default:user.username }}</h1>
+      <p class="profile-email">{{ user.email }}</p>
+      <p class="profile-since">Member since {{ user.date_joined|date:"F Y" }}</p>
+    </div>
+  </div>
+  <div class="profile-stats px-4">
+    <div class="stat-card"><div class="stat-num">{{ user.watched_count }}</div><div class="stat-label">Watched</div></div>
+    <div class="stat-card"><div class="stat-num">{{ user.watchlist_count }}</div><div class="stat-label">Watchlist</div></div>
+    <div class="stat-card"><div class="stat-num">{{ user.watched_movies.count }}</div><div class="stat-label">Reviews</div></div>
+  </div>
+  <!-- Watched Movies -->
+  <section class="px-4 mt-4">
+    <h2 class="section-title mb-3">Movies Watched</h2>
+    {% if watched %}
+    <div class="hscroll-row">
+      {% for item in watched %}
+      {% with movie=item.movie %}{% include 'partials/movie_card.html' %}{% endwith %}
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No movies watched yet. Start watching!</p>
+    {% endif %}
+  </section>
+  <!-- Watchlist -->
+  <section class="px-4 mt-4 pb-5">
+    <h2 class="section-title mb-3">My Watchlist</h2>
+    {% if watchlist %}
+    <div class="watchlist-list">
+      {% for item in watchlist %}
+      <div class="watchlist-row" id="wl-{{ item.movie.pk }}">
+        <img src="{{ item.movie.poster_url }}" alt="{{ item.movie.title }}" class="wl-poster" onerror="this.src='/static/images/no-poster.png'">
+        <div class="wl-info">
+          <a href="{% url 'movie_detail' item.movie.pk %}" class="wl-title">{{ item.movie.title }}</a>
+          <div class="wl-meta">{{ item.movie.release_year }} · {{ item.movie.get_content_type_display }} · ⭐ {{ item.movie.vote_average|floatformat:1 }}</div>
+          <div class="genre-chips mt-1">{% for g in item.movie.genres.all %}<span class="genre-chip">{{ g.name }}</span>{% endfor %}</div>
+        </div>
+        <button class="wl-remove watchlist-btn" data-pk="{{ item.movie.pk }}" onclick="removeWatchlistRow(this, {{ item.movie.pk }})">✕</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">Your watchlist is empty. Browse movies and add them!</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

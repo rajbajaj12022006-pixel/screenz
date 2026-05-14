@@ -1,0 +1,265 @@
+{
+  "meta": {
+    "projectName": "Screenz - Movie Tracking Web App",
+    "description": "Django + MySQL movie app with TMDB dataset, user auth, watchlist, and platform tracking",
+    "stack": "Django 4.2, MySQL 8, Python 3.11, TMDB local CSV dataset",
+    "totalTasks": 14
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Install dependencies & setup virtual environment",
+      "status": "pending",
+      "priority": "high",
+      "description": "Set up Python virtual environment and install all required packages",
+      "steps": [
+        "Open terminal in project root: cd screenz",
+        "Run: python -m venv venv",
+        "Activate: venv\\Scripts\\activate  (Windows)",
+        "Run: pip install -r requirements.txt"
+      ],
+      "files": ["requirements.txt"],
+      "notes": "Always activate venv before running any Django commands"
+    },
+    {
+      "id": 2,
+      "title": "Configure MySQL database",
+      "status": "pending",
+      "priority": "high",
+      "description": "Create MySQL database and configure Django to connect to it",
+      "steps": [
+        "Open MySQL Workbench or CMD mysql -u root -p",
+        "Run: CREATE DATABASE screenz_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+        "Create a MySQL user: CREATE USER 'screenz_user'@'localhost' IDENTIFIED BY 'your_password';",
+        "Grant permissions: GRANT ALL PRIVILEGES ON screenz_db.* TO 'screenz_user'@'localhost';",
+        "Update .env file with your DB credentials",
+        "Run: python manage.py migrate"
+      ],
+      "files": [".env.example", "screenz/settings.py"],
+      "notes": "Change DB_PASSWORD in .env to your actual MySQL root password"
+    },
+    {
+      "id": 3,
+      "title": "Download TMDB dataset & import movies",
+      "status": "pending",
+      "priority": "high",
+      "description": "Download TMDB 1M movie dataset from Kaggle and import into MySQL",
+      "steps": [
+        "Download from: https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata",
+        "Also try: https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset",
+        "Place tmdb_movies.csv in the /data/ folder of the project",
+        "Run: python manage.py import_movies --file=data/tmdb_movies.csv --limit=50000",
+        "Check admin panel to confirm import"
+      ],
+      "files": ["movies/management/commands/import_movies.py", "data/.gitkeep"],
+      "notes": "Use --limit flag to import a subset first to test (50k is a good start). Full 1M may take 10-15 mins."
+    },
+    {
+      "id": 4,
+      "title": "User authentication system",
+      "status": "pending",
+      "priority": "high",
+      "description": "Login, signup, logout with Django auth + custom user profile",
+      "steps": [
+        "Run migrations: python manage.py migrate",
+        "Test signup at: http://localhost:8000/auth/signup/",
+        "Test login at: http://localhost:8000/auth/login/"
+      ],
+      "files": [
+        "users/models.py",
+        "users/views.py",
+        "users/urls.py",
+        "templates/users/login.html",
+        "templates/users/signup.html"
+      ],
+      "notes": "CustomUser model extends AbstractUser with avatar and bio fields"
+    },
+    {
+      "id": 5,
+      "title": "Movie models & database schema",
+      "status": "pending",
+      "priority": "high",
+      "description": "Create all Django models: Movie, Genre, Platform, StreamingAvailability",
+      "steps": [
+        "Run: python manage.py makemigrations",
+        "Run: python manage.py migrate",
+        "Run: python manage.py createsuperuser",
+        "Visit: http://localhost:8000/admin/ to verify models"
+      ],
+      "files": [
+        "movies/models.py",
+        "movies/admin.py"
+      ],
+      "notes": "Movie model includes title, overview, release_date, vote_average, genres (M2M), platforms (M2M)"
+    },
+    {
+      "id": 6,
+      "title": "Home page — trending & newly added",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Build home page showing trending movies, newly added, and genre filters",
+      "steps": [
+        "Start server: python manage.py runserver",
+        "Visit: http://localhost:8000/",
+        "Test genre filter buttons",
+        "Test type filter (Movies / TV Shows)"
+      ],
+      "files": [
+        "movies/views.py",
+        "movies/urls.py",
+        "templates/movies/home.html",
+        "templates/partials/movie_card.html",
+        "static/css/main.css",
+        "static/js/main.js"
+      ],
+      "notes": "Home page uses HTMX for filter updates without full page reload"
+    },
+    {
+      "id": 7,
+      "title": "Search & filter system",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Full-text search with genre, year, platform, and type filters",
+      "steps": [
+        "Visit: http://localhost:8000/search/?q=batman",
+        "Test genre filter",
+        "Test platform filter",
+        "Test year filter",
+        "Test combined filters"
+      ],
+      "files": [
+        "movies/views.py",
+        "templates/movies/search.html",
+        "static/js/search.js"
+      ],
+      "notes": "Uses Django Q objects for combined filtering. HTMX for live search."
+    },
+    {
+      "id": 8,
+      "title": "Movie detail page",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Individual movie page with overview, cast, platforms, and watchlist button",
+      "steps": [
+        "Click any movie card to test",
+        "Visit: http://localhost:8000/movies/1/",
+        "Test Add to Watchlist button",
+        "Test Mark as Watched button"
+      ],
+      "files": [
+        "movies/views.py",
+        "templates/movies/detail.html"
+      ],
+      "notes": "Shows which platform to watch on (Netflix, Prime, Jio, Hotstar, Apple TV+)"
+    },
+    {
+      "id": 9,
+      "title": "Watchlist & watched history",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Add/remove movies from watchlist, mark as watched, personal tracking",
+      "steps": [
+        "Login as a user",
+        "Add movies to watchlist",
+        "Visit: http://localhost:8000/watchlist/",
+        "Test mark as watched",
+        "Test remove from watchlist"
+      ],
+      "files": [
+        "watchlist/models.py",
+        "watchlist/views.py",
+        "watchlist/urls.py",
+        "templates/watchlist/watchlist.html"
+      ],
+      "notes": "WatchlistItem model: user + movie + status (want_to_watch / watched) + added_at"
+    },
+    {
+      "id": 10,
+      "title": "User profile page",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Profile page showing stats, watched movies, and watchlist",
+      "steps": [
+        "Login and visit: http://localhost:8000/profile/",
+        "Verify watched count",
+        "Verify watchlist count",
+        "Test edit profile"
+      ],
+      "files": [
+        "users/views.py",
+        "templates/users/profile.html"
+      ],
+      "notes": "Shows: movies watched, watchlist size, favorite genres (auto-calculated)"
+    },
+    {
+      "id": 11,
+      "title": "Platform streaming info",
+      "status": "pending",
+      "priority": "medium",
+      "description": "Tag movies with which platform they are on (Netflix, Prime, Jio, Hotstar)",
+      "steps": [
+        "Run: python manage.py seed_platforms",
+        "Go to admin and assign platforms to movies",
+        "Verify platform badges appear on movie cards"
+      ],
+      "files": [
+        "movies/management/commands/seed_platforms.py",
+        "movies/models.py"
+      ],
+      "notes": "Platforms: Netflix, Amazon Prime, JioCinema, Hotstar/Disney+, Apple TV+"
+    },
+    {
+      "id": 12,
+      "title": "REST API endpoints",
+      "status": "pending",
+      "priority": "low",
+      "description": "JSON API for movies, search, watchlist — used by JS frontend",
+      "steps": [
+        "Visit: http://localhost:8000/api/movies/",
+        "Test: http://localhost:8000/api/search/?q=batman",
+        "Test: http://localhost:8000/api/watchlist/ (requires login)"
+      ],
+      "files": [
+        "api/views.py",
+        "api/urls.py",
+        "api/serializers.py"
+      ],
+      "notes": "Uses Django REST Framework. Returns paginated JSON responses."
+    },
+    {
+      "id": 13,
+      "title": "UI styling — dark cinema theme",
+      "status": "pending",
+      "priority": "low",
+      "description": "Apply the dark red/black SCREENZ theme across all pages",
+      "steps": [
+        "Check all pages look consistent",
+        "Test on mobile viewport (Chrome DevTools)",
+        "Verify movie cards, search, profile all match theme"
+      ],
+      "files": [
+        "static/css/main.css",
+        "templates/base.html"
+      ],
+      "notes": "Theme: bg #0a0a0f, accent #E5383B, surface #12121a. Uses Google Fonts: Bebas Neue + DM Sans"
+    },
+    {
+      "id": 14,
+      "title": "Testing & production prep",
+      "status": "pending",
+      "priority": "low",
+      "description": "Basic tests and prepare for deployment",
+      "steps": [
+        "Run: python manage.py test",
+        "Set DEBUG=False in .env",
+        "Run: python manage.py collectstatic",
+        "Check for any errors"
+      ],
+      "files": [
+        "movies/tests.py",
+        "users/tests.py"
+      ],
+      "notes": "For deployment on Windows: consider PythonAnywhere or Railway.app (free tier)"
+    }
+  ]
+}

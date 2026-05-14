@@ -1,0 +1,228 @@
+{
+  "version": "1.0",
+  "project": "Screenz – Movie Web App",
+  "description": "Django + MySQL + TMDB Dataset movie discovery app with login, search, watchlist",
+  "tasks": [
+    {
+      "id": "T01",
+      "title": "Environment Setup",
+      "status": "pending",
+      "priority": "critical",
+      "description": "Install Python packages and set up MySQL database",
+      "steps": [
+        "Install Python 3.11+ from python.org if not already installed",
+        "Open Command Prompt in the screenz/ project folder",
+        "Create virtual environment: python -m venv venv",
+        "Activate it: venv\\Scripts\\activate",
+        "Install packages: pip install -r requirements.txt",
+        "Open MySQL Workbench or MySQL CLI",
+        "Run: CREATE DATABASE screenz_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;",
+        "Update screenz/settings.py → DATABASES → USER and PASSWORD with your MySQL credentials"
+      ],
+      "commands": [
+        "python -m venv venv",
+        "venv\\Scripts\\activate",
+        "pip install -r requirements.txt"
+      ]
+    },
+    {
+      "id": "T02",
+      "title": "Run Migrations",
+      "status": "pending",
+      "priority": "critical",
+      "depends_on": ["T01"],
+      "description": "Create all MySQL tables from Django models",
+      "steps": [
+        "Make sure virtual environment is activated (venv\\Scripts\\activate)",
+        "Run: python manage.py makemigrations accounts",
+        "Run: python manage.py makemigrations movies",
+        "Run: python manage.py makemigrations watchlist",
+        "Run: python manage.py migrate",
+        "Check MySQL — you should see ~15 tables in screenz_db"
+      ],
+      "commands": [
+        "python manage.py makemigrations accounts",
+        "python manage.py makemigrations movies",
+        "python manage.py makemigrations watchlist",
+        "python manage.py migrate"
+      ]
+    },
+    {
+      "id": "T03",
+      "title": "Create Superuser",
+      "status": "pending",
+      "priority": "high",
+      "depends_on": ["T02"],
+      "description": "Create an admin account to access Django Admin panel",
+      "steps": [
+        "Run: python manage.py createsuperuser",
+        "Enter your email, username, and password",
+        "Visit http://127.0.0.1:8000/admin to verify it works"
+      ],
+      "commands": [
+        "python manage.py createsuperuser"
+      ]
+    },
+    {
+      "id": "T04",
+      "title": "Download TMDB Dataset",
+      "status": "pending",
+      "priority": "critical",
+      "description": "Download the 1M TMDB movie dataset CSV from Kaggle",
+      "steps": [
+        "Go to: https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata",
+        "OR: https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset",
+        "Create a free Kaggle account if needed",
+        "Download the CSV file(s)",
+        "Rename/place the main movies CSV as: data/tmdb_movies.csv",
+        "The file should have columns: id, title, overview, release_date, vote_average, popularity, genres, poster_path etc."
+      ],
+      "kaggle_links": [
+        "https://www.kaggle.com/datasets/tmdb/tmdb-movie-metadata",
+        "https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset"
+      ]
+    },
+    {
+      "id": "T05",
+      "title": "Import TMDB Dataset",
+      "status": "pending",
+      "priority": "critical",
+      "depends_on": ["T02", "T04"],
+      "description": "Import movies from the TMDB CSV file into MySQL database",
+      "steps": [
+        "Place CSV at: data/tmdb_movies.csv",
+        "First test with 1000 movies: python scripts/import_tmdb.py data/tmdb_movies.csv 1000",
+        "If that works, run full import: python scripts/import_tmdb.py data/tmdb_movies.csv",
+        "Full 1M import can take 20-60 minutes — let it run",
+        "Check in Django Admin: http://127.0.0.1:8000/admin/movies/movie/"
+      ],
+      "commands": [
+        "python scripts/import_tmdb.py data/tmdb_movies.csv 1000",
+        "python scripts/import_tmdb.py data/tmdb_movies.csv"
+      ]
+    },
+    {
+      "id": "T06",
+      "title": "Add Platform Data",
+      "status": "pending",
+      "priority": "medium",
+      "depends_on": ["T02"],
+      "description": "Seed streaming platforms (Netflix, Prime, JioCinema, Hotstar etc.)",
+      "steps": [
+        "Platforms are auto-created when you run the import script (T05)",
+        "OR manually add via Django Admin: http://127.0.0.1:8000/admin/movies/platform/",
+        "Platforms: Netflix, Amazon Prime Video, JioCinema, Disney+ Hotstar, Apple TV+, ZEE5, SonyLIV",
+        "Use slugs: netflix, prime, jio, hotstar, apple, zee5, sonyliv"
+      ]
+    },
+    {
+      "id": "T07",
+      "title": "Run Dev Server & Test",
+      "status": "pending",
+      "priority": "high",
+      "depends_on": ["T02", "T03"],
+      "description": "Start Django development server and test all pages",
+      "steps": [
+        "Run: python manage.py runserver",
+        "Open browser: http://127.0.0.1:8000",
+        "Test login page — sign up with a new account",
+        "Test home page — trending + genre filters",
+        "Test search — search for a movie, apply filters",
+        "Test watchlist — click + button on a movie card",
+        "Test profile — view watched movies and watchlist",
+        "Test movie detail — click any movie card"
+      ],
+      "commands": [
+        "python manage.py runserver"
+      ],
+      "test_urls": [
+        "http://127.0.0.1:8000/accounts/login/",
+        "http://127.0.0.1:8000/",
+        "http://127.0.0.1:8000/search/",
+        "http://127.0.0.1:8000/accounts/profile/"
+      ]
+    },
+    {
+      "id": "T08",
+      "title": "Collect Static Files",
+      "status": "pending",
+      "priority": "medium",
+      "depends_on": ["T01"],
+      "description": "Collect all static files for production or if CSS/JS isn't loading",
+      "steps": [
+        "Run: python manage.py collectstatic",
+        "If DEBUG=True in settings.py, Django serves static files automatically",
+        "Only needed for production deployment"
+      ],
+      "commands": [
+        "python manage.py collectstatic"
+      ]
+    },
+    {
+      "id": "T09",
+      "title": "Add Movie Poster Image Placeholder",
+      "status": "pending",
+      "priority": "low",
+      "depends_on": ["T01"],
+      "description": "Add a fallback image when poster is not available",
+      "steps": [
+        "Create or download a placeholder image (e.g. 300x450px dark background with film icon)",
+        "Save it as: static/images/no-poster.png",
+        "The template already references this path in onerror fallback"
+      ]
+    },
+    {
+      "id": "T10",
+      "title": "MySQL Performance Indexes",
+      "status": "pending",
+      "priority": "medium",
+      "depends_on": ["T05"],
+      "description": "Add database indexes for fast search with 1M movies",
+      "steps": [
+        "The Movie model already has indexes defined for: release_year+vote_average, content_type+release_year, popularity",
+        "These are applied when you run migrate",
+        "For full-text search on 1M movies, optionally run these in MySQL CLI:",
+        "ALTER TABLE movies_movie ADD FULLTEXT INDEX ft_title (title);",
+        "ALTER TABLE movies_movie ADD FULLTEXT INDEX ft_overview (overview);",
+        "This enables fast MATCH AGAINST queries instead of LIKE %query%"
+      ],
+      "mysql_commands": [
+        "ALTER TABLE movies_movie ADD FULLTEXT INDEX ft_title (title);",
+        "ALTER TABLE movies_movie ADD FULLTEXT INDEX ft_overview (overview);"
+      ]
+    },
+    {
+      "id": "T11",
+      "title": "Build Movie Detail Page",
+      "status": "pending",
+      "priority": "high",
+      "depends_on": ["T07"],
+      "description": "Verify the detail page works with real movie data",
+      "steps": [
+        "Click any movie card from home or search",
+        "URL should be: /movie/<id>/",
+        "Check poster loads (or fallback shows)",
+        "Check genres display correctly",
+        "Check watchlist button works (AJAX)",
+        "Check 'More Like This' section shows similar movies"
+      ]
+    },
+    {
+      "id": "T12",
+      "title": "Future: Add OMDB/Local Platform Mapping",
+      "status": "future",
+      "priority": "low",
+      "description": "Map movies to specific Indian streaming platforms",
+      "steps": [
+        "Since TMDB API is blocked, manually assign platform availability",
+        "Option 1: Import a platform mapping CSV if available",
+        "Option 2: Use Django Admin to manually tag popular movies with platforms",
+        "Option 3: Add a 'Where to Watch' link via JustWatch scraping (advanced)"
+      ]
+    }
+  ],
+  "quick_start": {
+    "order": ["T01", "T02", "T03", "T04", "T05", "T07"],
+    "minimum_to_run": ["T01", "T02", "T03", "T07"]
+  }
+}

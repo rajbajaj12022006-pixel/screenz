@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% block title %}{{ movie.title }} - Screenz{% endblock %}
+
+{% block content %}
+
+{% comment %}
+  Store movie data safely in hidden div — no quote conflicts ever
+{% endcomment %}
+<div id="movieData"
+     data-title="{{ movie.title|escapejs }}"
+     data-key="{{ movie.trailer_youtube_key }}"
+     style="display:none;">
+</div>
+
+<div class="detail-page">
+
+  {% if movie.backdrop_url %}
+  <div class="detail-backdrop"
+       style="background-image: url('{{ movie.backdrop_url }}');"></div>
+  {% endif %}
+
+  <div class="detail-content px-4 py-5">
+    <div class="row g-4">
+
+      <!-- LEFT: Poster -->
+      <div class="col-md-3">
+        <img
+          src="{{ movie.poster_url }}"
+          alt="{{ movie.title }}"
+          class="detail-poster"
+          onerror="this.src='/static/images/no-poster.png'">
+      </div>
+
+      <!-- RIGHT: Info -->
+      <div class="col-md-9">
+
+        <h1 class="detail-title">{{ movie.title }}</h1>
+
+        {% if movie.tagline %}
+        <p class="detail-tagline">{{ movie.tagline }}</p>
+        {% endif %}
+
+        <!-- Meta Info -->
+        <div class="detail-meta-row">
+          <span class="meta-chip">{{ movie.release_year }}</span>
+          <span class="meta-chip">{{ movie.get_content_type_display }}</span>
+          <span class="meta-chip">{{ movie.runtime_display }}</span>
+          <span class="meta-chip rating-chip">
+            ⭐ {{ movie.vote_average|floatformat:1 }}
+            ({{ movie.vote_count }} votes)
+          </span>
+          <span class="meta-chip">{{ movie.original_language|upper }}</span>
+        </div>
+
+        <!-- Genres -->
+        <div class="genre-chips mt-2">
+          {% for genre in movie.genres.all %}
+          <a href="{% url 'search' %}?genre={{ genre.id }}"
+             class="genre-chip">{{ genre.name }}</a>
+          {% endfor %}
+        </div>
+
+        <!-- Overview -->
+        <p class="detail-overview mt-3">{{ movie.overview }}</p>
+
+        <!-- Platforms -->
+        <div class="platform-chips mt-3">
+          {% for platform in movie.platforms.all %}
+          <span class="platform-badge platform-{{ platform.slug }}">
+            {{ platform.name }}
+          </span>
+          {% empty %}
+          <span style="font-size:12px; color:#888;">
+            Platform info not available
+          </span>
+          {% endfor %}
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="detail-actions mt-4">
+
+          <button class="btn-trailer" id="trailerBtn">
+            ▶ Play Trailer
+          </button>
+
+          <button
+            class="btn-action-primary watchlist-btn {% if in_watchlist %}in-list{% endif %}"
+            data-pk="{{ movie.pk }}">
+            {% if in_watchlist %}✓ In Watchlist{% else %}+ Watchlist{% endif %}
+          </button>
+
+          <button
+            class="btn-action-secondary watched-btn {% if is_watched %}watched{% endif %}"
+            data-pk="{{ movie.pk }}">
+            {% if is_watched %}✓ Watched{% else %}Mark Watched{% endif %}
+          </button>
+
+        </div>
+
+        <!-- Director and Cast -->
+        <div class="info-card mt-4">
+          <h3 class="info-card-title">🎬 Cast & Crew</h3>
+
+          {% if movie.director %}
+          <div class="info-row">
+            <span class="info-label">Director</span>
+            <div class="info-values">
+              <span class="cast-chip director-chip">{{ movie.director }}</span>
+            </div>
+          </div>
+          {% else %}
+          <div class="info-row">
+            <span class="info-label">Director</span>
+            <div class="info-values">
+              <span class="cast-chip">Not available</span>
+            </div>
+          </div>
+          {% endif %}
+
+          {% if movie.cast %}
+          <div class="info-row mt-2">
+            <span class="info-label">Cast</span>
+            <div class="info-values">
+              {% for actor in cast_members %}
+                <span class="cast-chip">{{ actor }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% else %}
+          <div class="info-row mt-2">
+            <span class="info-label">Cast</span>
+            <div class="info-values">
+              <span class="cast-chip">Not available</span>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Where to Watch -->
+        <div class="info-card mt-3">
+          <h3 class="info-card-title">📺 Where to Watch</h3>
+          <div class="platform-links mt-2">
+            {% for platform in movie.platforms.all %}
+            <span class="plink plink-{{ platform.slug }}">{{ platform.name }}</span>
+            {% empty %}
+            <span class="cast-chip">Platform info not available</span>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Similar Movies -->
+  {% if similar %}
+  <section class="px-4 pb-5">
+    <h2 class="section-title mb-3">More Like This</h2>
+    <div class="hscroll-row">
+      {% for movie in similar %}
+        {% include 'partials/movie_card.html' %}
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+
+<!-- TRAILER MODAL — outside everything, uses inline styles only -->
+<div id="trailerModal" style="
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 99999;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(8px);
+">
+  <div style="
+    position: relative;
+    width: 90%;
+    max-width: 880px;
+    aspect-ratio: 16/9;
+    background: #111;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.9);
+  ">
+    <button
+      onclick="closeTrailerBtn()"
+      style="
+        position: absolute;
+        top: 12px; right: 12px;
+        z-index: 10;
+        width: 38px; height: 38px;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.85);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.3);
+        font-size: 18px;
+        cursor: pointer;
+        line-height: 1;
+      ">✕</button>
+
+    <div id="trailerContent" style="width:100%; height:100%;"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+// Read movie data from safe hidden div — no quote problems!
+var movieDataEl  = document.getElementById('movieData');
+var MOVIE_TITLE  = movieDataEl.getAttribute('data-title');
+var YOUTUBE_KEY  = movieDataEl.getAttribute('data-key');
+
+// Attach click to trailer button
+document.getElementById('trailerBtn').addEventListener('click', function() {
+  openTrailer();
+});
+
+// Close modal when clicking dark background
+document.getElementById('trailerModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    closeTrailerBtn();
+  }
+});
+
+// Close with Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeTrailerBtn();
+  }
+});
+
+function openTrailer() {
+  var modal   = document.getElementById('trailerModal');
+  var content = document.getElementById('trailerContent');
+
+  // Show modal
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  var iframeSrc = '';
+  if (YOUTUBE_KEY && YOUTUBE_KEY.trim() !== '') {
+    // Play exact trailer by saved key
+    iframeSrc = 'https://www.youtube.com/embed/' + YOUTUBE_KEY + '?autoplay=1&rel=0';
+  } else {
+    // Fallback: play YouTube trailer search in same modal (no redirect)
+    var query = encodeURIComponent(MOVIE_TITLE + ' official trailer');
+    iframeSrc = 'https://www.youtube.com/embed?autoplay=1&rel=0&listType=search&list=' + query;
+  }
+
+  content.innerHTML =
+    '<iframe' +
+    ' src="' + iframeSrc + '"' +
+    ' style="width:100%;height:100%;border:none;"' +
+    ' allow="autoplay; encrypted-media; fullscreen"' +
+    ' allowfullscreen>' +
+    '</iframe>';
+}
+
+function closeTrailerBtn() {
+  var modal   = document.getElementById('trailerModal');
+  var content = document.getElementById('trailerContent');
+  modal.style.display   = 'none';
+  content.innerHTML     = '';
+  document.body.style.overflow = '';
+}
+
+</script>
+{% endblock %}

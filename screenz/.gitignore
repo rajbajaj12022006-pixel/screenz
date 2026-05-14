@@ -1,0 +1,36 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+staticfiles/
+media/
+
+# Database — NEVER upload this!
+*.sql
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+
+# Large data files — CSV is too big for GitHub!
+data/
+*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Windows
+Thumbs.db
+Desktop.ini

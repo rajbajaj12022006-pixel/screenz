@@ -1,0 +1,10 @@
+{% if movies %}
+<div class="movie-grid">
+  {% for movie in movies %}{% include 'partials/movie_card.html' %}{% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+  <div class="empty-icon">🎬</div>
+  <p>No movies found. Try a different search.</p>
+</div>
+{% endif %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}My Profile — Screenz{% endblock %}
+{% block content %}
+
+<div class="profile-header">
+  <div class="profile-avatar">
+    {% if user.avatar %}
+      <img src="{{ user.avatar.url }}" alt="{{ user.display_name }}">
+    {% else %}
+      <span>{{ user.initials }}</span>
+    {% endif %}
+  </div>
+  <div class="profile-info">
+    <h1 class="profile-name">{{ user.display_name }}</h1>
+    <p class="profile-email">{{ user.email }}</p>
+    {% if user.bio %}<p class="profile-bio">{{ user.bio }}</p>{% endif %}
+    <a href="{% url 'edit_profile' %}" class="btn-outline btn-sm">Edit Profile</a>
+  </div>
+</div>
+
+<div class="profile-stats">
+  <div class="stat-box">
+    <div class="stat-num">{{ watched_count }}</div>
+    <div class="stat-label">Watched</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-num">{{ watchlist_count }}</div>
+    <div class="stat-label">Watchlist</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-num">{% if fav_genres %}{{ fav_genres.0.movie__genres__name|default:"—" }}{% else %}—{% endif %}</div>
+    <div class="stat-label">Top Genre</div>
+  </div>
+</div>
+
+{% if watched %}
+<div class="section">
+  <div class="section-header">
+    <h2 class="section-title">Movies Watched</h2>
+  </div>
+</div>
+<div class="hscroll">
+  {% for item in watched %}{% with movie=item.movie %}{% include 'partials/movie_card.html' %}{% endwith %}{% endfor %}
+</div>
+{% endif %}
+
+{% if watchlist %}
+<div class="section">
+  <div class="section-header">
+    <h2 class="section-title">My Watchlist</h2>
+    <a href="{% url 'watchlist' %}" class="see-all">See all →</a>
+  </div>
+</div>
+<div class="watchlist-list">
+  {% for item in watchlist %}
+  <div class="watchlist-row">
+    <div class="wl-poster">
+      {% if item.movie.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w92{{ item.movie.poster_path }}" alt="{{ item.movie.title }}">
+      {% else %}
+        <span>🎬</span>
+      {% endif %}
+    </div>
+    <div class="wl-info">
+      <a href="{% url 'movie_detail' item.movie.pk %}" class="wl-title">{{ item.movie.title }}</a>
+      <div class="wl-meta">
+        {{ item.movie.release_year }}
+        {% for g in item.movie.genres.all|slice:":2" %} · {{ g.name }}{% endfor %}
+      </div>
+    </div>
+    <div class="wl-actions">
+      <form method="post" action="{% url 'mark_watched' item.movie.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-sm btn-outline">✓ Watched</button>
+      </form>
+      <form method="post" action="{% url 'remove_watchlist' item.pk %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-sm btn-danger">Remove</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="profile-logout">
+  <a href="{% url 'logout' %}" class="btn-outline btn-full">Sign Out</a>
+</div>
+
+{% endblock %}

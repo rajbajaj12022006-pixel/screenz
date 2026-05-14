@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Search – Screenz{% endblock %}
+{% block content %}
+<div class="search-page px-4 py-4">
+  <form method="get" action="{% url 'search' %}" id="searchForm">
+    <div class="search-form-home mb-4" style="max-width:700px;">
+      <span class="search-icon-home">🔍</span>
+      <input type="text" name="q" value="{{ query }}" placeholder="Search movies, shows, genres..." class="search-input-home" autofocus>
+      <button type="submit" class="btn-search-submit">Search</button>
+    </div>
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="filter-group">
+        <label>Type</label>
+        <div class="filter-pills">
+          <a href="?q={{ query }}&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if not selected_type %}active{% endif %}">All</a>
+          <a href="?q={{ query }}&type=movie&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_type == 'movie' %}active{% endif %}">🎬 Movies</a>
+          <a href="?q={{ query }}&type=tv&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_type == 'tv' %}active{% endif %}">📺 TV Shows</a>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Platform</label>
+        <div class="filter-pills">
+          {% for platform in platforms %}
+          <a href="?q={{ query }}&type={{ selected_type }}&genre={{ selected_genre }}&platform={{ platform.slug }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_platform == platform.slug %}active{% endif %}">{{ platform.name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Genre</label>
+        <div class="filter-pills">
+          {% for genre in genres %}
+          <a href="?q={{ query }}&type={{ selected_type }}&genre={{ genre.id }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_genre == genre.id|stringformat:'s' %}active{% endif %}">{{ genre.name }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Year</label>
+        <div class="filter-pills">
+          {% for yr in years %}
+          <a href="?q={{ query }}&type={{ selected_type }}&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ yr }}&sort={{ selected_sort }}" class="filter-pill {% if selected_year == yr|stringformat:'s' %}active{% endif %}">{{ yr }}</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>Sort</label>
+        <select name="sort" onchange="this.form.submit()" class="filter-select">
+          <option value="-popularity" {% if selected_sort == '-popularity' %}selected{% endif %}>Most Popular</option>
+          <option value="-vote_average" {% if selected_sort == '-vote_average' %}selected{% endif %}>Top Rated</option>
+          <option value="-release_year" {% if selected_sort == '-release_year' %}selected{% endif %}>Newest First</option>
+          <option value="title" {% if selected_sort == 'title' %}selected{% endif %}>A–Z</option>
+        </select>
+      </div>
+    </div>
+  </form>
+  <p class="results-count">{{ total_results }} result{{ total_results|pluralize }} {% if query %}for "<strong>{{ query }}</strong>"{% endif %}</p>
+  <div class="movie-grid">
+    {% for movie in page_obj %}{% include 'partials/movie_card.html' %}{% empty %}
+    <div class="empty-state"><p>No results found. Try a different search or filter.</p></div>
+    {% endfor %}
+  </div>
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <div class="pagination-bar">
+    {% if page_obj.has_previous %}<a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}" class="page-btn">← Prev</a>{% endif %}
+    <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}" class="page-btn">Next →</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

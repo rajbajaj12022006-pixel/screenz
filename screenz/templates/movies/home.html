@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Home – Screenz{% endblock %}
+{% block content %}
+<div class="home-page">
+  <!-- Hero -->
+  {% with movie=trending.0 %}
+  {% if movie %}
+  <div class="hero-banner" {% if movie.backdrop_url %}style="background-image: linear-gradient(to right, #0a0a0f 40%, rgba(10,10,15,0.5)), url('{{ movie.backdrop_url }}'); background-size: cover; background-position: center;"{% endif %}>
+    <div class="hero-content">
+      <span class="badge-trending">🔥 TRENDING NOW</span>
+      <h1 class="hero-title">{{ movie.title }}</h1>
+      <p class="hero-meta">{{ movie.release_year }} · {{ movie.get_content_type_display }} · {{ movie.runtime_display }} · ⭐ {{ movie.vote_average|floatformat:1 }}</p>
+      <p class="hero-overview">{{ movie.overview|truncatechars:180 }}</p>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'movie_detail' movie.pk %}" class="btn-hero-primary">▶ More Info</a>
+        <button class="btn-hero-secondary watchlist-btn" data-pk="{{ movie.pk }}">+ Watchlist</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endwith %}
+
+  <!-- Search Bar -->
+  <div class="search-section px-4 pt-4">
+    <form action="{% url 'search' %}" method="get" class="search-form-home">
+      <span class="search-icon-home">🔍</span>
+      <input type="text" name="q" placeholder="Search movies, shows, genres..." class="search-input-home">
+      <button type="submit" class="btn-search-submit">Search</button>
+    </form>
+    <!-- Quick Genre Filter -->
+    <div class="genre-pills mt-3">
+      <a href="{% url 'search' %}" class="genre-pill active">All</a>
+      {% for genre in genres %}
+      <a href="{% url 'search' %}?genre={{ genre.id }}" class="genre-pill">{{ genre.name }}</a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Newly Added Movies -->
+  <section class="movie-section px-4 mt-4">
+    <div class="section-header">
+      <h2 class="section-title">Newly Added Movies</h2>
+      <a href="{% url 'search' %}?type=movie&sort=-added_at" class="see-all">See all →</a>
+    </div>
+    <div class="hscroll-row">
+      {% for movie in new_movies %}{% include 'partials/movie_card.html' %}{% endfor %}
+    </div>
+  </section>
+
+  <!-- Newly Added TV Shows -->
+  <section class="movie-section px-4 mt-4">
+    <div class="section-header">
+      <h2 class="section-title">Newly Added TV Shows</h2>
+      <a href="{% url 'search' %}?type=tv&sort=-added_at" class="see-all">See all →</a>
+    </div>
+    <div class="hscroll-row">
+      {% for movie in new_shows %}{% include 'partials/movie_card.html' %}{% endfor %}
+    </div>
+  </section>
+
+  <!-- Top Rated -->
+  <section class="movie-section px-4 mt-4 mb-5">
+    <div class="section-header">
+      <h2 class="section-title">Top Rated</h2>
+      <a href="{% url 'search' %}?sort=-vote_average" class="see-all">See all →</a>
+    </div>
+    <div class="hscroll-row">
+      {% for movie in trending %}{% include 'partials/movie_card.html' %}{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}
