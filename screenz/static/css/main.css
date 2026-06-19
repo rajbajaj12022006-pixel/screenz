@@ -272,3 +272,4 @@ body { font-family: var(--font-body); background: var(--bg); color: var(--text);
 .plink-hotstar  { background:rgba(26,103,255,0.12); color:#1A67FF; border:0.5px solid rgba(26,103,255,0.3); }
 .plink-zee5     { background:rgba(103,58,183,0.15); color:#9c27b0; border:0.5px solid rgba(103,58,183,0.3); }
 .plink-sonyliv  { background:rgba(255,87,34,0.12);  color:#FF5722; border:0.5px solid rgba(255,87,34,0.3); }
+.plink-apple    { background:rgba(255,255,255,0.07); color:#ccc;    border:0.5px solid rgba(255,255,255,0.15); }
