@@ -3,35 +3,31 @@
 
 {% block content %}
 
-{% comment %}
-  Store movie data safely in hidden div — no quote conflicts ever
-{% endcomment %}
+{% comment %} Safe data storage - no quote conflicts {% endcomment %}
 <div id="movieData"
      data-title="{{ movie.title|escapejs }}"
      data-key="{{ movie.trailer_youtube_key }}"
-     style="display:none;">
-</div>
+     style="display:none;"></div>
 
 <div class="detail-page">
 
   {% if movie.backdrop_url %}
   <div class="detail-backdrop"
-       style="background-image: url('{{ movie.backdrop_url }}');"></div>
+       style="background-image:url('{{ movie.backdrop_url }}');"></div>
   {% endif %}
 
   <div class="detail-content px-4 py-5">
     <div class="row g-4">
 
-      <!-- LEFT: Poster -->
+      <!-- Poster -->
       <div class="col-md-3">
-        <img
-          src="{{ movie.poster_url }}"
-          alt="{{ movie.title }}"
-          class="detail-poster"
-          onerror="this.src='/static/images/no-poster.png'">
+        <img src="{{ movie.poster_url }}"
+             alt="{{ movie.title }}"
+             class="detail-poster"
+             onerror="this.src='/static/images/no-poster.png'">
       </div>
 
-      <!-- RIGHT: Info -->
+      <!-- Info -->
       <div class="col-md-9">
 
         <h1 class="detail-title">{{ movie.title }}</h1>
@@ -40,7 +36,7 @@
         <p class="detail-tagline">{{ movie.tagline }}</p>
         {% endif %}
 
-        <!-- Meta Info -->
+        <!-- Meta -->
         <div class="detail-meta-row">
           <span class="meta-chip">{{ movie.release_year }}</span>
           <span class="meta-chip">{{ movie.get_content_type_display }}</span>
@@ -63,23 +59,10 @@
         <!-- Overview -->
         <p class="detail-overview mt-3">{{ movie.overview }}</p>
 
-        <!-- Platforms -->
-        <div class="platform-chips mt-3">
-          {% for platform in movie.platforms.all %}
-          <span class="platform-badge platform-{{ platform.slug }}">
-            {{ platform.name }}
-          </span>
-          {% empty %}
-          <span style="font-size:12px; color:#888;">
-            Platform info not available
-          </span>
-          {% endfor %}
-        </div>
-
         <!-- Action Buttons -->
         <div class="detail-actions mt-4">
 
-          <button class="btn-trailer" id="trailerBtn">
+          <button id="trailerBtn" class="btn-trailer">
             ▶ Play Trailer
           </button>
 
@@ -97,55 +80,96 @@
 
         </div>
 
-        <!-- Director and Cast -->
+        <!-- ═══════════════════════════════════════
+             CAST AND DIRECTOR
+        ════════════════════════════════════════ -->
         <div class="info-card mt-4">
-          <h3 class="info-card-title">🎬 Cast & Crew</h3>
+          <h3 class="info-card-title">🎬 Cast and Crew</h3>
 
-          {% if movie.director %}
-          <div class="info-row">
+          <!-- Director -->
+          <div class="info-row mb-3">
             <span class="info-label">Director</span>
             <div class="info-values">
-              <span class="cast-chip director-chip">{{ movie.director }}</span>
+              {% if movie.director %}
+                <span class="cast-chip director-chip">
+                  {{ movie.director }}
+                </span>
+              {% else %}
+                <span style="font-size:12px;color:#888;">
+                  Fetching...
+                  <a href="https://www.imdb.com/find?q={{ movie.title|urlencode }}"
+                     target="_blank" class="imdb-link" style="margin-left:8px;">
+                    View on IMDb →
+                  </a>
+                </span>
+              {% endif %}
             </div>
           </div>
-          {% else %}
-          <div class="info-row">
-            <span class="info-label">Director</span>
-            <div class="info-values">
-              <span class="cast-chip">Not available</span>
-            </div>
-          </div>
-          {% endif %}
 
-          {% if movie.cast %}
-          <div class="info-row mt-2">
+          <!-- Cast -->
+          <div class="info-row">
             <span class="info-label">Cast</span>
             <div class="info-values">
-              {% for actor in cast_members %}
+              {% if cast_members %}
+                {% for actor in cast_members %}
                 <span class="cast-chip">{{ actor }}</span>
-              {% endfor %}
+                {% endfor %}
+              {% else %}
+                <span style="font-size:12px;color:#888;">
+                  Fetching...
+                  <a href="https://www.imdb.com/find?q={{ movie.title|urlencode }}"
+                     target="_blank" class="imdb-link" style="margin-left:8px;">
+                    View on IMDb →
+                  </a>
+                </span>
+              {% endif %}
             </div>
           </div>
-          {% else %}
-          <div class="info-row mt-2">
-            <span class="info-label">Cast</span>
-            <div class="info-values">
-              <span class="cast-chip">Not available</span>
-            </div>
+
+          <!-- Always show IMDb link -->
+          <div class="mt-3">
+            <a href="https://www.imdb.com/find?q={{ movie.title|urlencode }}"
+               target="_blank" class="imdb-link">
+              🔍 Full cast and crew on IMDb →
+            </a>
           </div>
-          {% endif %}
+
         </div>
 
-        <!-- Where to Watch -->
+        <!-- ═══════════════════════════════════════
+             WHERE TO WATCH
+        ════════════════════════════════════════ -->
         <div class="info-card mt-3">
-          <h3 class="info-card-title">📺 Where to Watch</h3>
-          <div class="platform-links mt-2">
-            {% for platform in movie.platforms.all %}
-            <span class="plink plink-{{ platform.slug }}">{{ platform.name }}</span>
-            {% empty %}
-            <span class="cast-chip">Platform info not available</span>
+          <h3 class="info-card-title">📺 Where to Watch in India</h3>
+
+          <!-- JustWatch Button -->
+          <a href="https://www.justwatch.com/in/search?q={{ movie.title|urlencode }}"
+             target="_blank"
+             class="justwatch-btn">
+            🎬 Find on JustWatch →
+          </a>
+
+          {% if streaming_platforms %}
+          <p class="info-hint mt-2 mb-3">
+            Available on these platforms in India:
+          </p>
+
+          <div class="platform-links">
+            {% for platform in streaming_platforms %}
+            <a href="{{ platform.url }}"
+               target="_blank"
+               rel="noopener"
+               class="plink plink-{{ platform.slug }}">
+              {{ platform.name }}
+            </a>
             {% endfor %}
           </div>
+          {% else %}
+          <p class="info-hint mt-2 mb-0">
+            Not currently on major Indian streaming platforms.
+            Use JustWatch above to check rent/buy options.
+          </p>
+          {% endif %}
         </div>
 
       </div>
@@ -166,44 +190,44 @@
 
 </div>
 
-<!-- TRAILER MODAL — outside everything, uses inline styles only -->
+<!-- ═══════════════════════════════════════════════════
+     TRAILER MODAL
+════════════════════════════════════════════════════ -->
 <div id="trailerModal" style="
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.92);
-  z-index: 99999;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(8px);
-">
-  <div style="
-    position: relative;
-    width: 90%;
-    max-width: 880px;
-    aspect-ratio: 16/9;
-    background: #111;
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 40px 100px rgba(0,0,0,0.9);
-  ">
-    <button
-      onclick="closeTrailerBtn()"
-      style="
-        position: absolute;
-        top: 12px; right: 12px;
-        z-index: 10;
-        width: 38px; height: 38px;
-        border-radius: 50%;
-        background: rgba(0,0,0,0.85);
-        color: #fff;
-        border: 1px solid rgba(255,255,255,0.3);
-        font-size: 18px;
-        cursor: pointer;
-        line-height: 1;
-      ">✕</button>
+  display:none;
+  position:fixed;
+  top:0; left:0; right:0; bottom:0;
+  background:rgba(0,0,0,0.92);
+  z-index:99999;
+  align-items:center;
+  justify-content:center;
+  backdrop-filter:blur(8px);">
 
-    <div id="trailerContent" style="width:100%; height:100%;"></div>
+  <div style="
+    position:relative;
+    width:90%;
+    max-width:880px;
+    aspect-ratio:16/9;
+    background:#111;
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 40px 100px rgba(0,0,0,0.9);">
+
+    <button onclick="closeTrailerBtn()" style="
+      position:absolute;
+      top:12px; right:12px;
+      z-index:10;
+      width:38px; height:38px;
+      border-radius:50%;
+      background:rgba(0,0,0,0.85);
+      color:#fff;
+      border:1px solid rgba(255,255,255,0.3);
+      font-size:18px;
+      cursor:pointer;
+      line-height:1;">✕</button>
+
+    <div id="trailerContent" style="width:100%;height:100%;"></div>
+
   </div>
 </div>
 
@@ -212,62 +236,118 @@
 {% block extra_js %}
 <script>
 
-// Read movie data from safe hidden div — no quote problems!
-var movieDataEl  = document.getElementById('movieData');
-var MOVIE_TITLE  = movieDataEl.getAttribute('data-title');
-var YOUTUBE_KEY  = movieDataEl.getAttribute('data-key');
+// Read data safely
+var el          = document.getElementById('movieData');
+var MOVIE_TITLE = el.getAttribute('data-title');
+var YOUTUBE_KEY = el.getAttribute('data-key');
 
-// Attach click to trailer button
-document.getElementById('trailerBtn').addEventListener('click', function() {
-  openTrailer();
-});
+// Attach trailer button
+document.getElementById('trailerBtn').addEventListener('click', openTrailer);
 
-// Close modal when clicking dark background
+// Close on dark background click
 document.getElementById('trailerModal').addEventListener('click', function(e) {
-  if (e.target === this) {
-    closeTrailerBtn();
-  }
+  if (e.target === this) { closeTrailerBtn(); }
 });
 
-// Close with Escape key
+// Close on Escape key
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeTrailerBtn();
-  }
+  if (e.key === 'Escape') { closeTrailerBtn(); }
 });
 
 function openTrailer() {
   var modal   = document.getElementById('trailerModal');
   var content = document.getElementById('trailerContent');
 
-  // Show modal
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 
-  var iframeSrc = '';
-  if (YOUTUBE_KEY && YOUTUBE_KEY.trim() !== '') {
-    // Play exact trailer by saved key
-    iframeSrc = 'https://www.youtube.com/embed/' + YOUTUBE_KEY + '?autoplay=1&rel=0';
-  } else {
-    // Fallback: play YouTube trailer search in same modal (no redirect)
-    var query = encodeURIComponent(MOVIE_TITLE + ' official trailer');
-    iframeSrc = 'https://www.youtube.com/embed?autoplay=1&rel=0&listType=search&list=' + query;
-  }
+  var key = YOUTUBE_KEY ? YOUTUBE_KEY.trim() : '';
 
-  content.innerHTML =
-    '<iframe' +
-    ' src="' + iframeSrc + '"' +
-    ' style="width:100%;height:100%;border:none;"' +
-    ' allow="autoplay; encrypted-media; fullscreen"' +
-    ' allowfullscreen>' +
-    '</iframe>';
+  if (key !== '' && key !== 'None' &&
+      key !== 'null' && key !== 'undefined') {
+
+    // Show thumbnail - click opens YouTube
+    var thumbUrl = 'https://img.youtube.com/vi/' + key + '/maxresdefault.jpg';
+    var watchUrl = 'https://www.youtube.com/watch?v=' + key;
+
+    content.innerHTML =
+      '<div style="position:relative;width:100%;height:100%;' +
+      'background:#000;cursor:pointer;"' +
+      ' onclick="window.open(\'' + watchUrl + '\',\'_blank\')">' +
+
+        '<img src="' + thumbUrl + '"' +
+        ' onerror="this.src=\'https://img.youtube.com/vi/' + key + '/hqdefault.jpg\'"' +
+        ' style="width:100%;height:100%;object-fit:cover;opacity:0.75;">' +
+
+        '<div style="position:absolute;top:0;left:0;right:0;bottom:0;' +
+        'display:flex;flex-direction:column;align-items:center;' +
+        'justify-content:center;gap:12px;">' +
+
+          '<div style="width:80px;height:80px;' +
+          'background:rgba(255,0,0,0.95);' +
+          'border-radius:50%;' +
+          'display:flex;align-items:center;justify-content:center;' +
+          'box-shadow:0 0 40px rgba(255,0,0,0.6);">' +
+            '<div style="width:0;height:0;' +
+            'border-top:20px solid transparent;' +
+            'border-bottom:20px solid transparent;' +
+            'border-left:32px solid white;' +
+            'margin-left:6px;"></div>' +
+          '</div>' +
+
+          '<div style="color:#fff;font-size:15px;font-weight:600;' +
+          'text-shadow:0 2px 8px rgba(0,0,0,0.9);">' +
+            'Click to Watch on YouTube' +
+          '</div>' +
+
+        '</div>' +
+
+        '<div style="position:absolute;bottom:0;left:0;right:0;' +
+        'background:linear-gradient(transparent,rgba(0,0,0,0.9));' +
+        'padding:40px 20px 16px;' +
+        'color:#fff;font-size:18px;font-weight:700;">' +
+          MOVIE_TITLE +
+        '</div>' +
+
+      '</div>';
+
+  } else {
+    // No key — show YouTube search
+    var query = encodeURIComponent(MOVIE_TITLE + ' official trailer');
+    var ytUrl = 'https://www.youtube.com/results?search_query=' + query;
+
+    content.innerHTML =
+      '<div style="display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;height:100%;' +
+      'gap:20px;padding:30px;text-align:center;background:#0a0a0f;">' +
+
+      '<div style="font-size:54px;">🎬</div>' +
+
+      '<div style="font-size:20px;font-weight:700;color:#fff;">' +
+        MOVIE_TITLE + '</div>' +
+
+      '<div style="font-size:13px;color:#999;">' +
+        'Click below to watch the official trailer' +
+      '</div>' +
+
+      '<a href="' + ytUrl + '" target="_blank"' +
+      ' style="padding:14px 32px;background:#FF0000;color:#fff;' +
+      'border-radius:10px;text-decoration:none;' +
+      'font-size:15px;font-weight:700;">' +
+      '▶ Search Trailer on YouTube' +
+      '</a>' +
+
+      '<p style="font-size:11px;color:#555;">' +
+        'Opens YouTube in new tab' +
+      '</p>' +
+
+      '</div>';
+  }
 }
 
 function closeTrailerBtn() {
-  var modal   = document.getElementById('trailerModal');
-  var content = document.getElementById('trailerContent');
-  modal.style.display   = 'none';
-  content.innerHTML     = '';
+  document.getElementById('trailerModal').style.display = 'none';
+  document.getElementById('trailerContent').innerHTML   = '';
   document.body.style.overflow = '';
 }
 

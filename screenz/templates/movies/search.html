@@ -1,71 +1,358 @@
 {% extends 'base.html' %}
-{% block title %}Search – Screenz{% endblock %}
+{% block title %}Search - Screenz{% endblock %}
+
 {% block content %}
+
+{% comment %} Store current filter values safely {% endcomment %}
+<div id="filterData"
+     data-q="{{ query }}"
+     data-type="{{ selected_type }}"
+     data-platform="{{ selected_platform }}"
+     data-genre="{{ selected_genre }}"
+     data-year="{{ selected_year }}"
+     data-sort="{{ selected_sort|default:'-popularity' }}"
+     style="display:none;">
+</div>
+
 <div class="search-page px-4 py-4">
-  <form method="get" action="{% url 'search' %}" id="searchForm">
-    <div class="search-form-home mb-4" style="max-width:700px;">
-      <span class="search-icon-home">🔍</span>
-      <input type="text" name="q" value="{{ query }}" placeholder="Search movies, shows, genres..." class="search-input-home" autofocus>
-      <button type="submit" class="btn-search-submit">Search</button>
-    </div>
-    <!-- Filters -->
-    <div class="filters-bar">
-      <div class="filter-group">
-        <label>Type</label>
-        <div class="filter-pills">
-          <a href="?q={{ query }}&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if not selected_type %}active{% endif %}">All</a>
-          <a href="?q={{ query }}&type=movie&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_type == 'movie' %}active{% endif %}">🎬 Movies</a>
-          <a href="?q={{ query }}&type=tv&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_type == 'tv' %}active{% endif %}">📺 TV Shows</a>
-        </div>
-      </div>
-      <div class="filter-group">
-        <label>Platform</label>
-        <div class="filter-pills">
-          {% for platform in platforms %}
-          <a href="?q={{ query }}&type={{ selected_type }}&genre={{ selected_genre }}&platform={{ platform.slug }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_platform == platform.slug %}active{% endif %}">{{ platform.name }}</a>
-          {% endfor %}
-        </div>
-      </div>
-      <div class="filter-group">
-        <label>Genre</label>
-        <div class="filter-pills">
-          {% for genre in genres %}
-          <a href="?q={{ query }}&type={{ selected_type }}&genre={{ genre.id }}&platform={{ selected_platform }}&year={{ selected_year }}&sort={{ selected_sort }}" class="filter-pill {% if selected_genre == genre.id|stringformat:'s' %}active{% endif %}">{{ genre.name }}</a>
-          {% endfor %}
-        </div>
-      </div>
-      <div class="filter-group">
-        <label>Year</label>
-        <div class="filter-pills">
-          {% for yr in years %}
-          <a href="?q={{ query }}&type={{ selected_type }}&genre={{ selected_genre }}&platform={{ selected_platform }}&year={{ yr }}&sort={{ selected_sort }}" class="filter-pill {% if selected_year == yr|stringformat:'s' %}active{% endif %}">{{ yr }}</a>
-          {% endfor %}
-        </div>
-      </div>
-      <div class="filter-group">
-        <label>Sort</label>
-        <select name="sort" onchange="this.form.submit()" class="filter-select">
-          <option value="-popularity" {% if selected_sort == '-popularity' %}selected{% endif %}>Most Popular</option>
-          <option value="-vote_average" {% if selected_sort == '-vote_average' %}selected{% endif %}>Top Rated</option>
-          <option value="-release_year" {% if selected_sort == '-release_year' %}selected{% endif %}>Newest First</option>
-          <option value="title" {% if selected_sort == 'title' %}selected{% endif %}>A–Z</option>
-        </select>
-      </div>
-    </div>
+
+  <!-- Search Bar -->
+  <div class="search-form-home mb-4" style="max-width:700px;">
+    <span class="search-icon-home">🔍</span>
+    <input type="text"
+           id="searchInput"
+           value="{{ query }}"
+           placeholder="Search movies, shows, genres..."
+           class="search-input-home"
+           autofocus>
+    <button onclick="doSearch()" class="btn-search-submit">Search</button>
+  </div>
+
+  <!-- Hidden form that submits all filters together -->
+  <form method="get" action="{% url 'search' %}" id="filterForm">
+    <input type="hidden" name="q"        id="f_q"        value="{{ query }}">
+    <input type="hidden" name="type"     id="f_type"     value="{{ selected_type }}">
+    <input type="hidden" name="platform" id="f_platform" value="{{ selected_platform }}">
+    <input type="hidden" name="genre"    id="f_genre"    value="{{ selected_genre }}">
+    <input type="hidden" name="year"     id="f_year"     value="{{ selected_year }}">
+    <input type="hidden" name="sort"     id="f_sort"     value="{{ selected_sort|default:'-popularity' }}">
   </form>
-  <p class="results-count">{{ total_results }} result{{ total_results|pluralize }} {% if query %}for "<strong>{{ query }}</strong>"{% endif %}</p>
+
+  <!-- FILTERS -->
+  <div class="filters-bar">
+
+    <!-- Type Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Type</label>
+      <div class="filter-pills">
+        <button type="button"
+                class="filter-pill {% if not selected_type %}active{% endif %}"
+                onclick="setFilter('type', '')">
+          All
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_type == 'movie' %}active{% endif %}"
+                onclick="setFilter('type', 'movie')">
+          🎬 Movies
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_type == 'tv' %}active{% endif %}"
+                onclick="setFilter('type', 'tv')">
+          📺 TV Shows
+        </button>
+      </div>
+    </div>
+
+    <!-- Genre Filter (multiple select allowed) -->
+    <div class="filter-group">
+      <label class="filter-label">Genre</label>
+      <div class="filter-pills">
+        {% for genre in genres %}
+        <button type="button"
+                class="filter-pill {% if selected_genre == genre.id|stringformat:'s' %}active{% endif %}"
+                data-value="{{ genre.id }}"
+                onclick="setFilter('genre', '{{ genre.id }}')">
+          {{ genre.name }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Year Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Year</label>
+      <div class="filter-pills">
+        {% for yr in years %}
+        <button type="button"
+                class="filter-pill {% if selected_year == yr|stringformat:'s' %}active{% endif %}"
+                onclick="setFilter('year', '{{ yr }}')">
+          {{ yr }}
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Language Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Language</label>
+      <div class="filter-pills">
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'en' %}active{% endif %}"
+                onclick="setFilter('lang', 'en')">
+          English
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'hi' %}active{% endif %}"
+                onclick="setFilter('lang', 'hi')">
+          Hindi
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'ta' %}active{% endif %}"
+                onclick="setFilter('lang', 'ta')">
+          Tamil
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'te' %}active{% endif %}"
+                onclick="setFilter('lang', 'te')">
+          Telugu
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'ml' %}active{% endif %}"
+                onclick="setFilter('lang', 'ml')">
+          Malayalam
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'ko' %}active{% endif %}"
+                onclick="setFilter('lang', 'ko')">
+          Korean
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_lang == 'ja' %}active{% endif %}"
+                onclick="setFilter('lang', 'ja')">
+          Japanese
+        </button>
+      </div>
+    </div>
+
+    <!-- Sort Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Sort By</label>
+      <div class="filter-pills">
+        <button type="button"
+                class="filter-pill {% if selected_sort == '-popularity' or not selected_sort %}active{% endif %}"
+                onclick="setFilter('sort', '-popularity')">
+          🔥 Popular
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_sort == '-vote_average' %}active{% endif %}"
+                onclick="setFilter('sort', '-vote_average')">
+          ⭐ Top Rated
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_sort == '-release_year' %}active{% endif %}"
+                onclick="setFilter('sort', '-release_year')">
+          🆕 Newest
+        </button>
+        <button type="button"
+                class="filter-pill {% if selected_sort == 'title' %}active{% endif %}"
+                onclick="setFilter('sort', 'title')">
+          🔤 A-Z
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Filters + Clear Button -->
+    <div class="filter-group" id="activeFiltersRow" style="display:none;">
+      <label class="filter-label">Active</label>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div id="activeFiltersList" class="filter-pills"></div>
+        <button type="button"
+                onclick="clearAllFilters()"
+                style="padding:5px 14px; font-size:12px;
+                       background:rgba(229,56,59,0.15);
+                       border:0.5px solid rgba(229,56,59,0.4);
+                       border-radius:20px; color:#E5383B;
+                       cursor:pointer; font-family:inherit;">
+          ✕ Clear All
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Results Count -->
+  <p class="results-count">
+    {{ total_results }} result{{ total_results|pluralize }}
+    {% if query %}
+    for "<strong>{{ query }}</strong>"
+    {% endif %}
+  </p>
+
+  <!-- Movie Grid -->
   <div class="movie-grid">
-    {% for movie in page_obj %}{% include 'partials/movie_card.html' %}{% empty %}
-    <div class="empty-state"><p>No results found. Try a different search or filter.</p></div>
+    {% for movie in page_obj %}
+      {% include 'partials/movie_card.html' %}
+    {% empty %}
+    <div class="empty-state">
+      <p>No results found. Try different search or filters.</p>
+    </div>
     {% endfor %}
   </div>
+
   <!-- Pagination -->
   {% if page_obj.has_other_pages %}
   <div class="pagination-bar">
-    {% if page_obj.has_previous %}<a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}" class="page-btn">← Prev</a>{% endif %}
-    <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}" class="page-btn">Next →</a>{% endif %}
+    {% if page_obj.has_previous %}
+    <a href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}"
+       class="page-btn">← Prev</a>
+    {% endif %}
+    <span class="page-info">
+      Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </span>
+    {% if page_obj.has_next %}
+    <a href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}"
+       class="page-btn">Next →</a>
+    {% endif %}
   </div>
   {% endif %}
+
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+// ── Read current filter values from hidden div ─────────────────
+var fd = document.getElementById('filterData');
+var currentFilters = {
+  q:        fd.getAttribute('data-q')        || '',
+  type:     fd.getAttribute('data-type')     || '',
+  platform: fd.getAttribute('data-platform') || '',
+  genre:    fd.getAttribute('data-genre')    || '',
+  year:     fd.getAttribute('data-year')     || '',
+  lang:     fd.getAttribute('data-lang')     || '',
+  sort:     fd.getAttribute('data-sort')     || '-popularity',
+};
+
+// ── Set filter — click again to UNSELECT ──────────────────────
+function setFilter(key, value) {
+  if (currentFilters[key] === String(value)) {
+    // Same value clicked → UNSELECT
+    currentFilters[key] = '';
+
+    // Special case: sort always has a value
+    if (key === 'sort') {
+      currentFilters[key] = '-popularity';
+    }
+  } else {
+    // New value → SELECT
+    currentFilters[key] = String(value);
+  }
+  submitFilters();
+}
+
+// ── Search input ───────────────────────────────────────────────
+function doSearch() {
+  currentFilters.q = document.getElementById('searchInput').value.trim();
+  submitFilters();
+}
+
+// Enter key on search box
+document.getElementById('searchInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    doSearch();
+  }
+});
+
+// ── Clear ALL filters ──────────────────────────────────────────
+function clearAllFilters() {
+  currentFilters.type     = '';
+  currentFilters.platform = '';
+  currentFilters.genre    = '';
+  currentFilters.year     = '';
+  currentFilters.lang     = '';
+  currentFilters.sort     = '-popularity';
+  submitFilters();
+}
+
+// ── Submit all filters together ────────────────────────────────
+function submitFilters() {
+  document.getElementById('f_q').value        = currentFilters.q;
+  document.getElementById('f_type').value     = currentFilters.type;
+  document.getElementById('f_platform').value = currentFilters.platform;
+  document.getElementById('f_genre').value    = currentFilters.genre;
+  document.getElementById('f_year').value     = currentFilters.year;
+  document.getElementById('f_sort').value     = currentFilters.sort;
+
+  // Add lang field if not exists
+  var langInput = document.getElementById('f_lang');
+  if (!langInput) {
+    langInput = document.createElement('input');
+    langInput.type = 'hidden';
+    langInput.name = 'lang';
+    langInput.id   = 'f_lang';
+    document.getElementById('filterForm').appendChild(langInput);
+  }
+  langInput.value = currentFilters.lang;
+
+  document.getElementById('filterForm').submit();
+}
+
+// ── Show active filters summary ────────────────────────────────
+function updateActiveFilters() {
+  var labels = {
+    type:     { 'movie': '🎬 Movies', 'tv': '📺 TV Shows' },
+    sort:     {
+      '-popularity':   '🔥 Popular',
+      '-vote_average': '⭐ Top Rated',
+      '-release_year': '🆕 Newest',
+      'title':         '🔤 A-Z'
+    },
+    lang: {
+      'en': 'English', 'hi': 'Hindi', 'ta': 'Tamil',
+      'te': 'Telugu',  'ml': 'Malayalam', 'ko': 'Korean', 'ja': 'Japanese'
+    }
+  };
+
+  var active = [];
+
+  if (currentFilters.type) {
+    active.push(labels.type[currentFilters.type] || currentFilters.type);
+  }
+  if (currentFilters.genre) {
+    var genreBtn = document.querySelector(
+      '[data-value="' + currentFilters.genre + '"]'
+    );
+    if (genreBtn) active.push(genreBtn.textContent.trim());
+  }
+  if (currentFilters.year) {
+    active.push(currentFilters.year);
+  }
+  if (currentFilters.lang) {
+    active.push(labels.lang[currentFilters.lang] || currentFilters.lang);
+  }
+  if (currentFilters.sort && currentFilters.sort !== '-popularity') {
+    active.push(labels.sort[currentFilters.sort] || currentFilters.sort);
+  }
+
+  var row  = document.getElementById('activeFiltersRow');
+  var list = document.getElementById('activeFiltersList');
+
+  if (active.length > 0) {
+    row.style.display = 'flex';
+    list.innerHTML = active.map(function(a) {
+      return '<span style="padding:4px 10px;background:rgba(229,56,59,0.15);' +
+             'border:0.5px solid rgba(229,56,59,0.3);border-radius:20px;' +
+             'font-size:12px;color:#E5383B;">' + a + '</span>';
+    }).join('');
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+// Run on page load
+updateActiveFilters();
+
+</script>
 {% endblock %}
