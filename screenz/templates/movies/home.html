@@ -21,6 +21,18 @@
   {% endif %}
   {% endwith %}
 
+  <!-- Recommended for You -->
+  {% if recommendations %}
+  <section class="movie-section px-4 mt-4">
+    <div class="section-header">
+      <h2 class="section-title">Recommended for You</h2>
+    </div>
+    <div class="hscroll-row">
+      {% for movie in recommendations %}{% include 'partials/movie_card.html' %}{% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
   <!-- Search Bar -->
   <div class="search-section px-4 pt-4">
     <form action="{% url 'search' %}" method="get" class="search-form-home">

@@ -151,6 +151,26 @@ def get_platforms_for_movie(title, year=None):
         return []
 
 
+def sync_platforms_for_movie(movie):
+    """
+    Fetch streaming availability from JustWatch and save to the movie.
+    Returns list of platform dicts: [{'name', 'slug', 'url'}, ...]
+    """
+    from .models import Platform
+
+    platforms = get_platforms_for_movie(movie.title, movie.release_year)
+    movie.platforms.clear()
+    for p in platforms:
+        platform_obj, _ = Platform.objects.get_or_create(
+            slug=p['slug'],
+            defaults={'name': p['name']},
+        )
+        movie.platforms.add(platform_obj)
+    movie.platforms_checked = True
+    movie.save(update_fields=['platforms_checked'])
+    return platforms
+
+
 def get_platform_url(slug, title):
     """Fallback search URLs for each platform"""
     from urllib.parse import quote

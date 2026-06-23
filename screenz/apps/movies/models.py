@@ -63,6 +63,11 @@ class Movie(models.Model):
         blank=True,
         help_text='Comma separated actor names — e.g. Tom Hanks, Brad Pitt, Leonardo DiCaprio'
     )
+    platforms_checked = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text='True after JustWatch availability has been fetched for this title',
+    )
 
     added_at = models.DateTimeField(auto_now_add=True)
 

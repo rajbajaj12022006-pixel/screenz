@@ -10,6 +10,7 @@
      data-platform="{{ selected_platform }}"
      data-genre="{{ selected_genre }}"
      data-year="{{ selected_year }}"
+     data-lang="{{ selected_lang }}"
      data-sort="{{ selected_sort|default:'-popularity' }}"
      style="display:none;">
 </div>
@@ -60,6 +61,22 @@
                 onclick="setFilter('type', 'tv')">
           📺 TV Shows
         </button>
+      </div>
+    </div>
+
+    <!-- Platform Filter -->
+    <div class="filter-group">
+      <label class="filter-label">Platform</label>
+      <div class="filter-pills">
+        {% for platform in platforms %}
+        <button type="button"
+                class="filter-pill {% if selected_platform == platform.slug %}active{% endif %}"
+                data-value="{{ platform.slug }}"
+                data-label="{{ platform.name }}"
+                onclick="setFilter('platform', '{{ platform.slug }}')">
+          {{ platform.name }}
+        </button>
+        {% endfor %}
       </div>
     </div>
 
@@ -194,7 +211,11 @@
       {% include 'partials/movie_card.html' %}
     {% empty %}
     <div class="empty-state">
+      {% if selected_platform %}
+      <p>No titles on this platform yet. Refresh or try another platform — availability is checked in batches from JustWatch.</p>
+      {% else %}
       <p>No results found. Try different search or filters.</p>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
@@ -319,6 +340,16 @@ function updateActiveFilters() {
 
   if (currentFilters.type) {
     active.push(labels.type[currentFilters.type] || currentFilters.type);
+  }
+  if (currentFilters.platform) {
+    var platformBtn = document.querySelector(
+      '[data-value="' + currentFilters.platform + '"][data-label]'
+    );
+    if (platformBtn) {
+      active.push(platformBtn.getAttribute('data-label'));
+    } else {
+      active.push(currentFilters.platform);
+    }
   }
   if (currentFilters.genre) {
     var genreBtn = document.querySelector(

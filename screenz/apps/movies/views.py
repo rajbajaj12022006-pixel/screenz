@@ -3,6 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from .models import Movie, Genre, Platform
+from .recommendations import (
+    get_recommendations_for_user,
+    get_similar_for_user,
+    user_has_history,
+)
 
 @login_required
 def home_view(request):
@@ -11,12 +16,14 @@ def home_view(request):
     new_shows  = Movie.objects.filter(content_type='tv').order_by('-added_at')[:10]
     genres     = Genre.objects.all()
     platforms  = Platform.objects.all()
+    recommendations = get_recommendations_for_user(request.user, limit=12)
     return render(request, 'movies/home.html', {
-        'trending':   trending,
-        'new_movies': new_movies,
-        'new_shows':  new_shows,
-        'genres':     genres,
-        'platforms':  platforms,
+        'trending':        trending,
+        'new_movies':      new_movies,
+        'new_shows':       new_shows,
+        'genres':          genres,
+        'platforms':       platforms,
+        'recommendations': recommendations,
     })
 
 @login_required
@@ -39,6 +46,22 @@ def search_view(request):
         movies = movies.filter(content_type=selected_type)
     if selected_genre:
         movies = movies.filter(genres__id=selected_genre)
+    if selected_platform:
+        valid_slugs = set(
+            Platform.objects.values_list('slug', flat=True)
+        )
+        if selected_platform in valid_slugs:
+            tagged = Movie.objects.filter(
+                platforms__slug=selected_platform
+            ).distinct().count()
+            if tagged == 0:
+                from .justwatch_service import sync_platforms_for_movie
+                unchecked = Movie.objects.filter(
+                    platforms_checked=False
+                ).order_by('-popularity')[:10]
+                for movie in unchecked:
+                    sync_platforms_for_movie(movie)
+            movies = movies.filter(platforms__slug=selected_platform)
     if selected_year:
         movies = movies.filter(release_year=selected_year)
     if selected_lang:
@@ -119,27 +142,15 @@ def movie_detail_view(request, pk):
         user=request.user, movie=movie
     ).exists()
 
-    similar = Movie.objects.filter(
-        genres__in=movie.genres.all(),
-        content_type=movie.content_type
-    ).exclude(pk=movie.pk).distinct().order_by('-vote_average')[:8]
+    similar = get_similar_for_user(request.user, movie, limit=8)
+    similar_personalized = user_has_history(request.user)
 
     streaming_platforms = []
     try:
-        from .justwatch_service import get_platforms_for_movie, get_platform_url
-        streaming_platforms = get_platforms_for_movie(
-            movie.title,
-            movie.release_year,
-        )
-        if streaming_platforms:
-            movie.platforms.clear()
-            for p in streaming_platforms:
-                platform_obj, _ = Platform.objects.get_or_create(
-                    slug=p['slug'],
-                    defaults={'name': p['name']},
-                )
-                movie.platforms.add(platform_obj)
-        elif movie.platforms.exists():
+        from .justwatch_service import sync_platforms_for_movie, get_platform_url
+        if not movie.platforms_checked:
+            streaming_platforms = sync_platforms_for_movie(movie)
+        else:
             streaming_platforms = [
                 {
                     'name': p.name,
@@ -166,6 +177,7 @@ def movie_detail_view(request, pk):
         'in_watchlist':        in_watchlist,
         'is_watched':          is_watched,
         'similar':             similar,
+        'similar_personalized': similar_personalized,
         'cast_members':        cast_members,
         'streaming_platforms': streaming_platforms,
     })
